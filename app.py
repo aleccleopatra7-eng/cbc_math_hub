@@ -85,19 +85,15 @@ if st.sidebar.button("Join/Create Group"):
         if group_name.strip():
             st.session_state.group_name = group_name
             file = f"groups/{group_name}.json"
-
             if os.path.exists(file):
                 with open(file) as f:
                     group_data = json.load(f)
             else:
                 group_data = {"members": [], "scores": {}, "messages": []}
-
             if learner_name not in group_data["members"]:
                 group_data["members"].append(learner_name)
-
             with open(file,"w") as f:
                 json.dump(group_data, f)
-
             st.sidebar.success(f"Joined {group_name}")
         else:
             st.sidebar.success(f"Logged in as {learner_name}")
@@ -118,7 +114,6 @@ else:
 # MAIN SYSTEM
 # -------------------------
 if learner_name:
-
     grade = st.selectbox("Select Grade", list(CBC_TOPICS.keys()))
     topics = CBC_TOPICS[grade]
 
@@ -131,132 +126,135 @@ if learner_name:
     chosen_strand = st.selectbox("Strand", list(topics.keys()))
     chosen_topic = st.selectbox("Topic", topics[chosen_strand])
 
-    st.markdown("## 🧠 Concept Lab")
+    # -------------------------
+    # STUDENT INPUT & SIMULATION
+    # -------------------------
+    st.markdown("## ✍️ Ask Your Own Question / Simulation")
+
+    user_input = st.text_input("Type math expression or equation (e.g., 2*x+3=7, y=2*x+1, 3/4+1/2)")
+
+    if user_input:
+        try:
+            x = symbols('x')
+            if "=" in user_input and "y" not in user_input:
+                left,right = user_input.split("=")
+                solution = solve(Eq(eval(left), eval(right)), x)
+                st.success(f"Solution: x = {solution[0]}")
+            elif "y=" in user_input.replace(" ", ""):
+                expr = user_input.split("=")[1]
+                x_vals = np.linspace(-10,10,400)
+                y_vals = [eval(expr.replace("x",str(val))) for val in x_vals]
+                fig, ax = plt.subplots()
+                ax.plot(x_vals, y_vals, label=user_input)
+                ax.axhline(0,color='black',linestyle='--')
+                ax.axvline(0,color='black',linestyle='--')
+                ax.grid(True)
+                ax.legend()
+                st.pyplot(fig)
+            else:
+                result = eval(user_input)
+                st.success(f"Answer: {result}")
+        except Exception as e:
+            st.error(f"Error: check format. Example: 2*x+3=7, y=2*x+1, 3/4+1/2")
 
     # -------------------------
     # CONCEPT LAB
     # -------------------------
-    def concept_lab():
+    st.markdown("## 🧠 Concept Lab")
 
+    def concept_lab():
         if chosen_strand == "Numbers":
             st.subheader("Numbers Lab")
             n = st.number_input("Enter number", 1, 500)
-
             st.write("Even" if n%2==0 else "Odd")
-
             if n>1 and all(n%i!=0 for i in range(2,int(math.sqrt(n))+1)):
                 st.write("Prime")
             else:
                 st.write("Not prime")
-
             st.write("Factors:", [i for i in range(1,n+1) if n%i==0])
 
         elif chosen_strand == "Fractions/Decimals":
             st.subheader("Fractions Lab")
-
             n1 = st.number_input("Num1",1,20)
             d1 = st.number_input("Den1",1,20)
             n2 = st.number_input("Num2",1,20)
             d2 = st.number_input("Den2",1,20)
-
             f1 = Fraction(n1,d1)
             f2 = Fraction(n2,d2)
-
-            st.write(f1,"+",f2,"=",f1+f2)
-            st.write(f1,"-",f2,"=",f1-f2)
-            st.write(f1,"×",f2,"=",f1*f2)
-            st.write(f1,"÷",f2,"=",f1/f2)
+            st.write(f"{f1} + {f2} = {f1+f2}")
+            st.write(f"{f1} - {f2} = {f1-f2}")
+            st.write(f"{f1} × {f2} = {f1*f2}")
+            st.write(f"{f1} ÷ {f2} = {f1/f2}")
 
         elif chosen_strand == "Algebra":
             st.subheader("Algebra Lab")
-
-            eq = st.text_input("Enter equation (2*x+3=7)")
-
+            eq = st.text_input("Equation (2*x+3=7)")
             if eq:
                 try:
-                    x = symbols('x')
                     left,right = eq.split("=")
-                    solution = solve(Eq(eval(left), eval(right)), x)
-
+                    solution = solve(Eq(eval(left), eval(right)), symbols('x'))
                     st.success(f"x = {solution[0]}")
-
+                    # Visualization
                     x_vals = np.linspace(-10,10,400)
                     y_vals = [eval(left.replace("x",str(val))) for val in x_vals]
-
                     fig, ax = plt.subplots()
-                    ax.plot(x_vals, y_vals)
-                    ax.axhline(eval(right), linestyle="--")
-                    ax.grid()
+                    ax.plot(x_vals, y_vals,label='Equation curve')
+                    ax.axhline(eval(right),linestyle='--',color='red')
+                    ax.grid(True)
+                    ax.legend()
                     st.pyplot(fig)
-
                 except:
-                    st.error("Invalid format")
+                    st.error("Invalid equation format")
 
         elif chosen_strand == "Geometry":
             st.subheader("Geometry Lab")
-
             a1 = st.slider("Angle 1",0,180)
             a2 = st.slider("Angle 2",0,180)
-
             total = a1+a2
             st.write("Sum:", total)
-
             if total==180:
                 st.success("Straight line")
             elif total==90:
                 st.success("Complementary")
-
             fig, ax = plt.subplots()
-            ax.bar(["A1","A2"],[a1,a2])
+            ax.bar(["Angle1","Angle2"],[a1,a2], color=['orange','green'])
             st.pyplot(fig)
 
         elif chosen_strand == "Measurement":
             st.subheader("Measurement Lab")
-
             l = st.number_input("Length",1,100)
             w = st.number_input("Width",1,100)
             h = st.number_input("Height",1,100)
-
             st.write("Area:", l*w)
             st.write("Perimeter:", 2*(l+w))
             st.write("Volume:", l*w*h)
 
         elif "Statistics" in chosen_strand or "Probability" in chosen_strand:
             st.subheader("Statistics Lab")
-
-            data = st.text_input("Enter numbers (comma separated)")
-
+            data = st.text_input("Enter numbers separated by comma")
             if data:
                 nums = [float(x) for x in data.split(",")]
-
-                st.write("Mean:", sum(nums)/len(nums))
-                st.write("Max:", max(nums))
-                st.write("Min:", min(nums))
-
+                st.write("Mean:", np.mean(nums))
+                st.write("Max:", np.max(nums))
+                st.write("Min:", np.min(nums))
                 fig, ax = plt.subplots()
-                ax.hist(nums)
+                ax.hist(nums,color='skyblue',edgecolor='black')
                 st.pyplot(fig)
-
-                success = st.slider("Success count",0,len(nums))
+                success = st.slider("Number of successes",0,len(nums))
                 st.write("Probability:", success/len(nums))
 
         elif chosen_strand == "Financial Maths":
             st.subheader("Financial Lab")
-
             p = st.number_input("Amount",1,10000)
             r = st.number_input("Rate %",1,100)
-            t = st.number_input("Time",1,10)
-
+            t = st.number_input("Time (years)",1,10)
             interest = p*r*t/100
-
             st.write("Interest:", interest)
             st.write("Total:", p+interest)
 
         elif chosen_strand == "Problem Solving":
             st.subheader("Problem Solving")
-
-            prob = st.text_area("Enter problem")
-
+            prob = st.text_area("Enter problem description")
             if prob:
                 st.write("1. Understand")
                 st.write("2. Plan")
@@ -269,9 +267,7 @@ if learner_name:
 # GROUP CHAT
 # -------------------------
 if st.session_state.group_name:
-
     file = f"groups/{st.session_state.group_name}.json"
-
     if os.path.exists(file):
         with open(file) as f:
             group_data = json.load(f)
