@@ -1,4 +1,3 @@
-
 import streamlit as st
 import math
 import numpy as np
@@ -9,7 +8,7 @@ import random
 import uuid
 from fractions import Fraction
 from datetime import datetime
-import time
+from streamlit_autorefresh import st_autorefresh
 
 # -------------------------
 # PAGE SETTINGS
@@ -305,7 +304,7 @@ if st.session_state.group_name:
             with open(group_file,"w") as f:
                 json.dump(group_data,f)
             st.session_state.chat_input = ""  # Clear input
-            st.experimental_rerun()  # Refresh to show message immediately
+            st.experimental_rerun()  # Immediate refresh to show message
 
     st.write("### Group Chat (Latest 10)")
     # Reload messages to show updates
@@ -315,6 +314,7 @@ if st.session_state.group_name:
     for msg in group_data["messages"][-10:]:
         st.write(f"{msg['time'].split('.')[0]} - {msg['user']}: {msg['message']}")
 
-    # Auto-refresh every 5 seconds
-    time.sleep(5)
-    st.experimental_rerun()
+    # -------------------------
+    # SAFE AUTO REFRESH EVERY 5 SECONDS
+    # -------------------------
+    st_autorefresh(interval=5000, key="refresh")
